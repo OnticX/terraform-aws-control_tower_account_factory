@@ -39,7 +39,7 @@ jobs:
       - name: Run Claude Code Review
         id: claude-review
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_MODELS_TOKEN }}
           CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
           python3 << 'PYTHON_SCRIPT'
