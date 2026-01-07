@@ -34,20 +34,24 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install anthropic
+          pip install openai
 
       - name: Run Claude Code Review
         id: claude-review
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
           python3 << 'PYTHON_SCRIPT'
           import os
-          import anthropic
           import subprocess
+          from openai import OpenAI
 
-          client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+          # Use GitHub Models endpoint with Claude 3.5 Sonnet
+          client = OpenAI(
+              base_url="https://models.inference.ai.azure.com",
+              api_key=os.environ.get("GITHUB_TOKEN")
+          )
 
           # Get the diff
           diff_output = subprocess.run(
@@ -79,16 +83,16 @@ jobs:
 
           Provide a concise, actionable review in markdown format."""
 
-          # Call Claude API
-          message = client.messages.create(
-              model="claude-sonnet-4-5-20250929",
-              max_tokens=4096,
+          # Call GitHub Models API with Claude 3.5 Sonnet
+          response = client.chat.completions.create(
+              model="claude-3.5-sonnet",
               messages=[
                   {"role": "user", "content": prompt}
-              ]
+              ],
+              max_tokens=4096
           )
 
-          review = message.content[0].text
+          review = response.choices[0].message.content
 
           # Save review to file
           with open("review.md", "w") as f:
@@ -111,7 +115,7 @@ jobs:
               console.log('Review file not found, using default message');
             }
 
-            const comment = `## 🤖 Claude AI Code Review\n\n${review}\n\n---\n*Automated review powered by Claude Sonnet 4.5*`;
+            const comment = `## 🤖 Claude AI Code Review\n\n${review}\n\n---\n*Automated review powered by Claude 3.5 Sonnet via GitHub Models (Free)*`;
 
             await github.rest.issues.createComment({
               owner: context.repo.owner,
